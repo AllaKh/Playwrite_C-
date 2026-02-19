@@ -3,43 +3,37 @@ using System.Threading.Tasks;
 
 namespace Pages
 {
+    /// <summary>
+    /// Page object for the admin report page
+    /// Handles checking bookings and logout
+    /// </summary>
     public class AdminReportPage : BasePage
     {
-        /// <summary>
-        /// Selector for the report table
-        /// </summary>
-        public readonly string ReportTableSelector = "#report-table";
+        private readonly string eventSelector = "div.rbc-event-content";
+        private readonly string logoutSelector = "#navbarSupportedContent > ul.navbar-nav.ms-auto > li:nth-child(2) > button";
 
-        /// <summary>
-        /// Selector for the logout button
-        /// </summary>
-        public readonly string LogoutButton = "#logout-btn";
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="page">Playwright IPage instance</param>
         public AdminReportPage(IPage page) : base(page) { }
 
         /// <summary>
-        /// Navigates to the admin report page
+        /// Open admin report page
         /// </summary>
         public async Task OpenAsync()
         {
             await NavigateAsync("/admin/report");
+            await Page.WaitForTimeoutAsync(2000);
         }
 
         /// <summary>
-        /// Checks if a booking with the specified full name exists in the report table
+        /// Search booking by full name in report
         /// </summary>
-        /// <param name="fullName">Full name to search for</param>
-        /// <returns>True if found, otherwise false</returns>
         public async Task<bool> FindBookingInTableAsync(string fullName)
         {
-            var rows = await Page.QuerySelectorAllAsync($"{ReportTableSelector} tr");
-            foreach (var row in rows)
+            await Page.WaitForTimeoutAsync(2000);
+            var events = await Page.QuerySelectorAllAsync(eventSelector);
+
+            foreach (var ev in events)
             {
-                var text = await row.TextContentAsync();
+                var text = await ev.TextContentAsync();
                 if (!string.IsNullOrEmpty(text) && text.Contains(fullName))
                     return true;
             }
@@ -47,11 +41,11 @@ namespace Pages
         }
 
         /// <summary>
-        /// Clicks the logout button
+        /// Logout
         /// </summary>
         public async Task LogoutAsync()
         {
-            await Page.ClickAsync(LogoutButton);
+            await Page.ClickAsync(logoutSelector);
         }
     }
 }

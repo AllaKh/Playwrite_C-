@@ -3,69 +3,93 @@ using Microsoft.Playwright;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Pages;
 
-[TestFixture]
-public class ReservationTests
+namespace Tests
 {
-    private IPlaywright _pw;
-    private IBrowser _browser;
-    private IPage _page;
-    private PlaywrightSettings _settings;
-
-    [SetUp]
-    public async Task SetupAsync()
+    [TestFixture]
+    public class ReservationTests
     {
-        _settings = PlaywrightSettings.Load();
-        _pw = await Playwright.CreateAsync();
-        _browser = await _pw.Chromium.LaunchAsync(new BrowserTypeLaunchOptions { Headless = _settings.Headless });
-        _page = await _browser.NewPageAsync();
-    }
+        private IPlaywright _pw;
+        private IBrowser _browser;
+        private IPage _page;
+        private PlaywrightSettings _settings;
 
-    [TearDown]
-    public async Task TearDownAsync()
-    {
-        await _page.CloseAsync();
-        await _browser.CloseAsync();
-        _pw.Dispose();
-    }
+        [SetUp]
+        public async Task SetupAsync()
+        {
+            _settings = PlaywrightSettings.Load();
 
-    [Test]
-    public async Task FullReservationFlowAsync()
-    {
-        var home = new HomePage(_page);
-        var admin = new AdminPage(_page);
-        var room = new RoomPage(_page);
-        var report = new AdminReportPage(_page);
+            _pw = await Playwright.CreateAsync();
+            _browser = await _pw.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
+            {
+                Headless = _settings.Headless
+            });
+            _page = await _browser.NewPageAsync();
+        }
 
-        // Open home
-        await home.OpenAsync(_settings.BaseURL);
+        [TearDown]
+        public async Task TearDownAsync()
+        {
+            await _page.CloseAsync();
+            await _browser.CloseAsync();
+            _pw.Dispose();
+        }
 
-        // Go to admin and login
-        await home.GoAdminAsync();
-        await admin.LoginAsync(_settings.Auth.Username, _settings.Auth.Password);
+        [Test]
+        public async Task FullReservationFlowAsync()
+        {
+            // Initialize page objects
+            var home = new HomePage(_page);
+            var admin = new AdminPage(_page);
+            var room = new RoomPage(_page);
+            var report = new AdminReportPage(_page);
 
-        // Back to front page
-        await home.BackFrontAsync();
-        await home.ScrollDownOneThirdAsync();
-        await home.OpenSecondRoomAsync();
+            // 1. Open home page
+            await home.OpenAsync();
 
-        // Room page
-        var (start, end) = room.GenerateRandomDates();
-        await room.GoToRoomWithDatesAsync(2, start, end);
-        await room.OpenReservationAsync();
+            // 2. Go to admin page and login
+            await home.GoAdminAsync();
+            await admin.LoginAsync(_settings.Auth.Username, _settings.Auth.Password);
 
-        // Fill booking
-        var payloadJson = File.ReadAllText("TestData/payload.json");
-        var payload = JsonSerializer.Deserialize<JsonElement>(payloadJson);
-        await room.FillBookingFormAsync(payload);
+            // 3. Go back to front page
+            await home.BackFrontAsync();
+            await home.ScrollDownOneThirdAsync();
+            await home.OpenSecondRoomAsync();
 
-        await _page.WaitForTimeoutAsync(1000);
+            // 4. Room page: generate random dates and go to reservation URL
+            var (start, end) = room.GenerateRandomDates();
+            await room.GoToRoomWithDatesAsync(2, start, end);
 
-        // Admin report
-        await report.OpenAsync();
-        var fullName = $"{payload.GetProperty("first_name").GetString()} {payload.GetProperty("last_name").GetString()}";
-        Assert.That(await report.FindBookingInTableAsync(fullName), Is.True, $"Booking for {fullName} not found");
+            // Wait for reservation page to load
+            await _page.WaitForTimeoutAsync(2000);
 
-        await report.LogoutAsync();
+            // 5. Click "Make Reservation"
+            await room.OpenReservationAsync();
+
+            // 6. Load booking payload from TestData directory
+            string projectRoot = Directory.GetParent(Directory.GetCurrentDirectory())!.Parent!.Parent!.FullName;
+            string payloadPath = Path.Combine(projectRoot, "TestData", "payload.json");
+
+            if (!File.Exists(payloadPath))
+                Assert.Fail($"Test data file not found: {payloadPath}");
+
+            string payloadJson = await File.ReadAllTextAsync(payloadPath);
+            var payload = JsonSerializer.Deserialize<JsonElement>(payloadJson);
+
+            // 7. Fill booking form and submit
+            await room.FillBookingFormAsync(payload!);
+
+            // Wait a moment for confirmation
+            await _page.WaitForTimeoutAsync(1000);
+
+            // 8. Go to admin report page and verify booking
+            await report.OpenAsync();
+            string fullName = $"{payload.GetProperty("first_name").GetString()} {payload.GetProperty("last_name").GetString()}";
+            Assert.That(await report.FindBookingInTableAsync(fullName), Is.True, $"Booking for {fullName} not found in admin report");
+
+            // 9. Logout
+            await report.LogoutAsync();
+        }
     }
 }

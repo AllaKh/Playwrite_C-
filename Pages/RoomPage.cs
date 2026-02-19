@@ -6,81 +6,70 @@ using System.Threading.Tasks;
 namespace Pages
 {
     /// <summary>
-    /// Page object for the Room page
-    /// Provides methods to interact with room details and reservations
+    /// Page object for a Room
+    /// Handles reservation form interactions
     /// </summary>
     public class RoomPage : BasePage
     {
-        /// <summary>
-        /// Selector for the room heading
-        /// </summary>
-        public readonly string HeadingSelector = "h1.room-title";
+        public readonly string HeadingSelector = "#root-container h1";
+        private readonly string doReservationSelector = "#doReservation";
 
-        /// <summary>
-        /// Selector for the "Make Reservation" button
-        /// </summary>
-        public readonly string MakeReservationButton = "#make-reservation-btn";
+        private readonly string firstNameInput = "#root-container > div > div.container.my-5 > div > div.col-lg-4 > div > div > form > div.input-group.mb-3.room-booking-form > input";
+        private readonly string lastNameInput = "#root-container > div > div.container.my-5 > div > div.col-lg-4 > div > div > form > div:nth-child(2) > input";
+        private readonly string emailInput = "#root-container > div > div.container.my-5 > div > div.col-lg-4 > div > div > form > div:nth-child(3) > input";
+        private readonly string phoneInput = "#root-container > div > div.container.my-5 > div > div.col-lg-4 > div > div > form > div:nth-child(4) > input";
+        private readonly string submitButton = "#root-container > div > div.container.my-5 > div > div.col-lg-4 > div > div > form > button.btn.btn-primary.w-100.mb-3";
 
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="page">Playwright IPage instance</param>
         public RoomPage(IPage page) : base(page) { }
 
         /// <summary>
-        /// Checks if the room heading is visible
+        /// Check if room heading is visible
         /// </summary>
-        /// <returns>True if visible, false otherwise</returns>
         public async Task<bool> HasHeadingAsync()
         {
             return await IsVisibleAsync(HeadingSelector);
         }
 
         /// <summary>
-        /// Generates random start and end dates for booking
+        /// Generate random check-in and check-out dates
         /// </summary>
-        /// <returns>Tuple of start and end dates in yyyy-MM-dd format</returns>
-        public (string Start, string End) GenerateRandomDates()
+        public (string CheckIn, string CheckOut) GenerateRandomDates()
         {
-            var random = new Random();
-            var start = DateTime.Today.AddDays(random.Next(1, 30));
-            var end = start.AddDays(random.Next(1, 5));
-            return (start.ToString("yyyy-MM-dd"), end.ToString("yyyy-MM-dd"));
+            var rnd = new Random();
+            var checkin = DateTime.Today.AddDays(rnd.Next(0, 10));
+            var checkout = checkin.AddDays(1);
+            return (checkin.ToString("yyyy-MM-dd"), checkout.ToString("yyyy-MM-dd"));
         }
 
         /// <summary>
-        /// Navigates to a specific room page with given dates
+        /// Navigate to reservation page with specific dates
         /// </summary>
-        /// <param name="roomId">Room ID</param>
-        /// <param name="start">Start date (yyyy-MM-dd)</param>
-        /// <param name="end">End date (yyyy-MM-dd)</param>
-        public async Task GoToRoomWithDatesAsync(int roomId, string start, string end)
+        public async Task GoToRoomWithDatesAsync(int roomId, string checkin, string checkout)
         {
-            await NavigateAsync($"/reservation/{roomId}?start={start}&end={end}");
+            string url = $"{BaseUrl}/reservation/{roomId}?checkin={checkin}&checkout={checkout}";
+            await Page.GotoAsync(url);
+            await Page.WaitForTimeoutAsync(2000);
         }
 
         /// <summary>
-        /// Clicks the "Make Reservation" button
+        /// Click "Make Reservation" button
         /// </summary>
         public async Task OpenReservationAsync()
         {
-            await Page.ClickAsync(MakeReservationButton);
+            await Page.ClickAsync(doReservationSelector);
+            await Page.WaitForTimeoutAsync(500);
         }
 
         /// <summary>
-        /// Fills the booking form with data from a JSON payload and submits
+        /// Fill reservation form and submit
         /// </summary>
-        /// <param name="payload">JSON object containing form data</param>
         public async Task FillBookingFormAsync(JsonElement payload)
         {
-            foreach (var prop in payload.EnumerateObject())
-            {
-                var selector = $"#{prop.Name}";
-                var value = prop.Value.GetString() ?? string.Empty;
-                await Page.FillAsync(selector, value);
-            }
-
-            await Page.ClickAsync("#submit-btn");
+            await Page.FillAsync(firstNameInput, payload.GetProperty("first_name").GetString() ?? string.Empty);
+            await Page.FillAsync(lastNameInput, payload.GetProperty("last_name").GetString() ?? string.Empty);
+            await Page.FillAsync(emailInput, payload.GetProperty("email").GetString() ?? string.Empty);
+            await Page.FillAsync(phoneInput, payload.GetProperty("phone").GetString() ?? string.Empty);
+            await Page.ClickAsync(submitButton);
         }
     }
 }
