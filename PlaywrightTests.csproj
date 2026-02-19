@@ -44,8 +44,7 @@
   </ItemGroup>
 
   <ItemGroup>
-	<Compile Remove="Tests\AdminLoginTests.cs" />
-	<Compile Include="Tests\ReservationTests.cs" />  
+	<Compile Include="Tests\ReservationTests.cs" />
   </ItemGroup>
 
 </Project>
