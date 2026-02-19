@@ -1,0 +1,8 @@
+{
+  "baseURL": "https://automationintesting.online",
+  "headless": false,
+  "auth": {
+    "username": "admin",
+    "password": "password"
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "PlaywrightTests": {
+      "commandName": "Project",
+      "commandLineArgs": "dotnet test",
+      "workingDirectory": "I:\\C#_Projects\\Playwrite_C#"
+    }
+  }
+}
