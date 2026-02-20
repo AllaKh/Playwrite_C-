@@ -1,89 +1,95 @@
 # Playwright C# Automation Tests
 
-This repository contains end-to-end UI tests for AutomationInTesting.online using Playwright and NUnit in C# with .NET 8.0.
+This repository contains end-to-end UI tests for [AutomationInTesting.online](https://automationintesting.online) using **Playwright** and **NUnit** in **C#/.NET 8.0**.
 
 The tests cover:
 
-- Admin login functionality (valid and invalid credentials)
-- Room reservation flow
-- Verification of bookings in the admin report
+* Admin login functionality (valid/invalid credentials)
+* Room reservation flow
+* Verification of bookings in the admin report
 
+---
 
 ## Technologies Used
 
-- .NET 8.0 / C#
-- Playwright for .NET
-- NUnit 3 (test framework)
-- Playwright Test Runner
-- JSON configuration and test data
+* **.NET 8.0 / C#**
+* **Playwright for .NET**
+* **NUnit 3** (test framework)
+* **Playwright Test Runner**
+* **JSON** configuration and test data
 
+---
 
 ## Project Structure
 
+```
 Playwrite_C#
 │
-├─ Pages/               
+├─ Pages/               # Page Object Models
 │   ├─ BasePage.cs
 │   ├─ HomePage.cs
 │   ├─ AdminPage.cs
 │   ├─ RoomPage.cs
 │   └─ AdminReportPage.cs
 │
-├─ Tests/               
+├─ Tests/               # NUnit test classes
 │   ├─ AdminLoginTests.cs
 │   └─ ReservationTests.cs
 │
-├─ TestData/            
+├─ TestData/            # Test payloads
 │   ├─ payload.json
 │   └─ invalid_passwords.json
 │
-├─ config.json          
-├─ PlaywrightSettings.cs
+├─ config.json          # Base URL, headless setting, credentials
+├─ PlaywrightSettings.cs # C# wrapper to load config.json
 └─ PlaywrightTests.csproj
+```
 
-Pages contains Page Object Model classes.
-
-Tests contains NUnit test classes.
-
-TestData contains JSON payload files used for testing.
-
-config.json stores base URL, headless option, and credentials.
-
-PlaywrightSettings.cs loads configuration from config.json.
-
+---
 
 ## Prerequisites
 
-Install .NET 8.0 SDK  
-https://dotnet.microsoft.com/download/dotnet/8.0
+1. **.NET 8.0 SDK**
+   [Download .NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
 
-Install Playwright CLI:
+2. **Install Playwright CLI**
 
+```bash
 dotnet tool install --global Microsoft.Playwright.CLI
+```
 
-Install Playwright browsers:
+3. **Install browsers**
 
+```bash
 playwright install
+```
 
-This will download Chromium, Firefox, and WebKit.
+> This will download Chromium, Firefox, and WebKit for test automation.
 
+---
 
 ## Installation
 
 Clone the repository:
 
+```bash
 git clone <repository_url>
 cd Playwrite_C#
+```
 
 Restore NuGet packages:
 
+```bash
 dotnet restore
+```
 
+---
 
 ## Configuration
 
-config.json stores base URL, headless option, and admin credentials:
+* `config.json` – stores the base URL, headless option, and admin credentials:
 
+```json
 {
   "baseURL": "https://automationintesting.online",
   "headless": false,
@@ -92,60 +98,64 @@ config.json stores base URL, headless option, and admin credentials:
     "password": "password"
   }
 }
+```
 
-TestData/payload.json contains booking payload data for Reservation tests.
+* `TestData/payload.json` – booking payload for Reservation tests.
+* `TestData/invalid_passwords.json` – list of incorrect passwords for login tests.
 
-TestData/invalid_passwords.json contains a list of incorrect passwords for login tests.
+> Paths in tests are resolved relative to the project root.
 
-Paths in tests are resolved relative to the project root.
-
+---
 
 ## Running Tests
 
-Open terminal in project root:
+1. Open terminal in project root:
 
+```bash
 cd I:\C#_Projects\Playwrite_C#
+```
 
-Optional: clean and build the project:
+2. Clean & build the project (optional):
 
+```bash
 dotnet clean
 dotnet build
+```
 
-Run all tests:
+3. Run all tests:
 
+```bash
 dotnet test
+```
 
-Run a specific test class:
+4. Run a specific test file (example: ReservationTests):
 
+```bash
 dotnet test --filter FullyQualifiedName~ReservationTests
+```
 
+---
 
 ## Notes / Known Behavior
 
-The first login uses credentials from config.json.
+* The first login uses credentials from `config.json`. Invalid login tests read passwords from `TestData/invalid_passwords.json`.
+* After navigating back to the front page, tests re-login if needed before accessing admin reports.
+* The test waits for network idle state to ensure pages are fully loaded before interacting.
+* Selectors are hardcoded for **admin links**, **front page link**, and **room cards**.
 
-Invalid login tests read passwords from TestData/invalid_passwords.json.
-
-After navigating back to the front page, tests re-login if needed before accessing admin reports.
-
-The tests wait for page load states before interacting with elements.
-
-Selectors for admin links, front page navigation, and room cards are hardcoded.
-
+---
 
 ## Test Flow Summary
 
-AdminLoginTests
+1. **AdminLoginTests**
 
-- Check login with valid credentials
-- Check login with invalid credentials
-- Verify correct landing page after successful login
+   * Check login with valid and invalid credentials.
+   * Verify correct landing page (`/admin/rooms`) after successful login.
 
-ReservationTests
+2. **ReservationTests**
 
-- Open front page
-- Navigate to a room
-- Generate random check-in and check-out dates
-- Fill booking form using payload.json
-- Verify booking appears in admin report
-- Logout
+   * Open front page, navigate to a room.
+   * Generate random check-in/check-out dates.
+   * Fill booking form with `payload.json`.
+   * Verify booking appears in admin report.
+   * Logout.
